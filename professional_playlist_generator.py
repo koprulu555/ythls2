@@ -2,7 +2,6 @@
 import requests
 import re
 import time
-import hashlib
 import random
 import string
 from urllib.parse import quote
@@ -16,23 +15,19 @@ headers = {
 }
 
 def generate_random_string(length=16):
-    """Rastgele string oluştur"""
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 def get_live_video_info(channel_id):
-    """Kanalın canlı yayın bilgilerini al"""
     try:
         url = f"https://www.youtube.com/channel/{channel_id}/live"
         response = requests.get(url, headers=headers, timeout=15)
         
-        # Video ID ve diğer bilgileri bul
         video_id_match = re.search(r'"videoId":"([^"]+)"', response.text)
         if not video_id_match:
             return None
             
         video_id = video_id_match.group(1)
         
-        # Diğer gerekli bilgileri bul
         channel_name_match = re.search(r'"author":"([^"]+)"', response.text)
         channel_name = channel_name_match.group(1) if channel_name_match else f"Channel_{channel_id[:8]}"
         
@@ -47,22 +42,19 @@ def get_live_video_info(channel_id):
         return None
 
 def generate_youtube_manifest_url(video_info):
-    """Doğru YouTube manifest URL'sini oluştur"""
     if not video_info:
         return None
     
     video_id = video_info['video_id']
     timestamp = video_info['timestamp']
     
-    # Rastgele parametreler oluştur
     ei = generate_random_string(16)
-    ip = "185.27.134.41"  # Örnek IP
+    ip = "185.27.134.41"
     bui = generate_random_string(32)
     spc = generate_random_string(40)
     
-    # Temel URL yapısı
     base_params = [
-        f"expire/{timestamp + 7200}",  # 2 saat geçerli
+        f"expire/{timestamp + 7200}",
         f"ei/{ei}",
         f"ip/{ip}",
         f"id/{video_id}",
@@ -85,14 +77,12 @@ def generate_youtube_manifest_url(video_info):
         "vprv/1"
     ]
     
-    # SPARAMS (query parametreleri)
     sparams = [
         "expire", "ei", "ip", "id", "source", "requiressl", "ratebypass",
         "live", "go", "rqh", "pacing", "nvgoi", "ncsapi", "keepalive",
         "fexp", "dover", "itag", "playlist_type", "bui", "spc", "vprv"
     ]
     
-    # URL'yi oluştur
     base_url = "https://manifest.googlevideo.com/api/manifest/hls_variant"
     params_str = "/".join(base_params)
     sparams_str = quote(",".join(sparams))
@@ -102,7 +92,6 @@ def generate_youtube_manifest_url(video_info):
     return manifest_url
 
 def create_playlist_entry(channel_name, channel_id, manifest_url):
-    """M3U girişi oluştur"""
     if not manifest_url:
         return None
     
@@ -112,7 +101,6 @@ def main():
     print("🎬 Profesyonel YouTube Playlist Oluşturucu")
     print("===========================================")
     
-    # Kanal listesi
     channels = [
         {"name": "24_Tv", "id": "UCN7VYCsI4Lx1-J4_BtjoWUA"},
         {"name": "A_Spor", "id": "UCJElRTCNEmLemgirqvsW63Q"},
@@ -141,40 +129,32 @@ def main():
         {"name": "Ulusal_Kanal", "id": "UC6T0L26KS1NHMPbTwI1L4Eg"}
     ]
     
-    # M3U içeriği oluştur
     m3u_content = "#EXTM3U\n"
     successful = 0
     
     for channel in channels:
         print(f"🔍 {channel['name']} işleniyor...")
         
-        # Kanal bilgilerini al
         video_info = get_live_video_info(channel['id'])
         if not video_info:
             print(f"❌ {channel['name']}: Canlı yayın bulunamadı")
             continue
         
-        # Manifest URL'sini oluştur
         manifest_url = generate_youtube_manifest_url(video_info)
         if not manifest_url:
             print(f"❌ {channel['name']}: URL oluşturulamadı")
             continue
         
-        # M3U girişini ekle
         entry = create_playlist_entry(channel['name'], channel['id'], manifest_url)
         if entry:
             m3u_content += entry + "\n"
             successful += 1
             print(f"✅ {channel['name']} başarıyla eklendi")
-            print(f"   📺 Video ID: {video_info['video_id']}")
-            print(f"   🔗 URL: {manifest_url[:80]}...")
         else:
             print(f"❌ {channel['name']} eklenemedi")
         
-        # Kısa bekleme
         time.sleep(1)
     
-    # Dosyaya yaz
     with open("youtube_live.m3u", "w", encoding="utf-8") as f:
         f.write(m3u_content)
     
