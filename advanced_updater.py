@@ -19,12 +19,12 @@ headers = {
     "Upgrade-Insecure-Requests": "1",
 }
 
-def get_youtube_live_stream_advanced(channel_id):
-    """Advanced YouTube canlı yayın M3U8 URL alma"""
+def get_youtube_live_stream_direct(channel_id):
+    """Doğrudan YouTube canlı yayın M3U8 URL'sini alma"""
     try:
-        # Önce channel sayfasına eriş
-        channel_url = f"https://www.youtube.com/channel/{channel_id}"
-        response = requests.get(channel_url, headers=headers, timeout=30)
+        # Önce canlı yayın sayfasına eriş
+        live_url = f"https://www.youtube.com/channel/{channel_id}/live"
+        response = requests.get(live_url, headers=headers, timeout=30)
         
         # Video ID'yi bul
         video_id = None
@@ -47,7 +47,24 @@ def get_youtube_live_stream_advanced(channel_id):
         
         print(f"📺 Bulunan Video ID: {video_id}")
         
-        # YouTube iframe API'sinden M3U8 URL'sini al
+        # yt-dlp ile doğrudan M3U8 URL'sini al
+        try:
+            cmd = [
+                'yt-dlp', '-g', '-f', 'best',
+                '--user-agent', headers['User-Agent'],
+                f'https://www.youtube.com/watch?v={video_id}'
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                stream_url = result.stdout.strip()
+                if stream_url and 'http' in stream_url:
+                    print(f"✅ M3U8 URL'si alındı: {stream_url[:80]}...")
+                    return stream_url
+        except:
+            print("🔄 yt-dlp başarısız, alternatif yöntem deneniyor...")
+        
+        # Alternatif yöntem: YouTube embed sayfası
         embed_url = f"https://www.youtube.com/embed/{video_id}"
         embed_response = requests.get(embed_url, headers=headers, timeout=30)
         
@@ -58,56 +75,61 @@ def get_youtube_live_stream_advanced(channel_id):
             r'(https://manifest\.googlevideo\.com[^"]+)'
         ]
         
-        m3u8_url = None
         for pattern in m3u8_patterns:
             matches = re.findall(pattern, embed_response.text)
             if matches:
                 m3u8_url = matches[0].replace('\\u0026', '&')
-                break
+                print(f"✅ M3U8 URL bulundu: {m3u8_url[:80]}...")
+                return m3u8_url
         
-        if m3u8_url:
-            print(f"✅ M3U8 URL bulundu: {m3u8_url[:100]}...")
-            return m3u8_url
-        
-        # Fallback: Direct manifest URL oluştur
-        manifest_url = f"https://manifest.googlevideo.com/api/manifest/hls_variant/expire/{int(time.time()) + 3600}/ei/random_string/ip/0.0.0.0/id/{video_id}/source/yt_live_broadcast/requiressl/yes/ratebypass/yes/live/1/sgoap/gir%3Dyes/sgovp/gir%3Dyes/hls_chunk_host/r1---sn-5hne6n7s.googlevideo.com/playlist_duration/30/manifest_duration/30/gcr/tr/ms/au/mm/44/mn/sn-5hne6n7s/pl/24/dover/11/keepalive/yes/fexp/24007246/beids/24350017/mt/1630000000/sparams/expire,ei,ip,id,source,requiressl,ratebypass,live,sgoap,sgovp,hls_chunk_host,playlist_duration,manifest_duration,gcr,ms,mm,mn,pl/signature/ABC123/key/yes"
-        return manifest_url
+        print(f"❌ {channel_id} için M3U8 URL'si bulunamadı")
+        return None
         
     except Exception as e:
-        print(f"❌ Advanced stream alma hatası: {e}")
+        print(f"❌ Stream alma hatası: {e}")
         return None
 
-def get_stream_from_proxy(channel_id):
-    """Proxy üzerinden YouTube stream alma"""
+def get_stream_from_external_service(channel_id):
+    """Harici servisler üzerinden stream alma"""
     try:
-        proxy_services = [
-            f"https://yt3.ggpht.com/{channel_id}",
+        external_services = [
+            f"https://youtube.com/channel/{channel_id}/live",
             f"https://www.youtube.com/embed/live_stream?channel={channel_id}",
-            f"https://youtube.com/channel/{channel_id}/live"
+            f"https://www.youtube.com/channel/{channel_id}"
         ]
         
-        for proxy_url in proxy_services:
+        for service_url in external_services:
             try:
-                response = requests.get(proxy_url, headers=headers, timeout=20)
+                response = requests.get(service_url, headers=headers, timeout=20)
                 if response.status_code == 200:
                     # M3U8 URL'sini ara
                     m3u8_matches = re.findall(r'(https://[^"]*\.m3u8[^"]*)', response.text)
-                    if m3u8_matches:
-                        return m3u8_matches[0]
+                    for match in m3u8_matches:
+                        if 'googlevideo.com' in match:
+                            return match
             except:
                 continue
         
         return None
     except Exception as e:
-        print(f"❌ Proxy stream hatası: {e}")
+        print(f"❌ External service hatası: {e}")
         return None
 
-def download_m3u8_content(url, name):
-    """M3U8 içeriğini indir ve işle"""
+def download_m3u8_content_safe(url, name):
+    """M3U8 içeriğini güvenli şekilde indir"""
     try:
         print(f"📥 {name} için M3U8 indiriliyor...")
-        response = requests.get(url, headers=headers, timeout=45)
-        response.raise_for_status()
+        
+        # Özel headers ile istek yap
+        download_headers = headers.copy()
+        download_headers["Referer"] = "https://www.youtube.com/"
+        download_headers["Origin"] = "https://www.youtube.com"
+        
+        response = requests.get(url, headers=download_headers, timeout=45)
+        
+        if response.status_code != 200:
+            print(f"❌ {name} HTTP hatası: {response.status_code}")
+            return None
         
         content = response.text
         
@@ -116,20 +138,8 @@ def download_m3u8_content(url, name):
             print(f"❌ {name} için geçersiz M3U8 içeriği")
             return None
         
-        # URL'leri temizle
-        lines = content.split('\n')
-        cleaned_lines = []
-        
-        for line in lines:
-            if line.startswith('http'):
-                # IP adresini temizle
-                cleaned_line = re.sub(r'ip=[^&]+', 'ip=0.0.0.0', line)
-                cleaned_line = re.sub(r'/ip/[^/]+/', '/ip/0.0.0.0/', cleaned_line)
-                cleaned_lines.append(cleaned_line)
-            else:
-                cleaned_lines.append(line)
-        
-        return '\n'.join(cleaned_lines)
+        print(f"✅ {name} M3U8 başarıyla indirildi ({len(content)} karakter)")
+        return content
         
     except Exception as e:
         print(f"❌ {name} M3U8 indirme hatası: {e}")
@@ -147,7 +157,7 @@ def create_main_playlist(channels):
     return main_playlist
 
 def main():
-    print("🎬 Advanced YouTube M3U8 Güncelleyici Başlatılıyor...")
+    print("🎬 Professional YouTube M3U8 Güncelleyici Başlatılıyor...")
     
     # Playlist klasörünü oluştur
     playlist_dir = Path("playlist")
@@ -175,20 +185,20 @@ def main():
         
         print(f"\n🔍 [{index+1}/{len(channels)}] {name} işleniyor ({channel_id})...")
         
-        # 1. Advanced yöntemle stream al
-        stream_url = get_youtube_live_stream_advanced(channel_id)
+        # 1. Direkt yöntemle stream al
+        stream_url = get_youtube_live_stream_direct(channel_id)
         
-        # 2. Fallback: Proxy yöntemi
+        # 2. Fallback: Harici servis yöntemi
         if not stream_url:
-            print("🔄 Advanced yöntem başarısız, proxy deneniyor...")
-            stream_url = get_stream_from_proxy(channel_id)
+            print("🔄 Direkt yöntem başarısız, harici servis deneniyor...")
+            stream_url = get_stream_from_external_service(channel_id)
         
         if not stream_url:
             print(f"❌ {name} için stream URL alınamadı")
             continue
         
         # M3U8 içeriğini indir
-        content = download_m3u8_content(stream_url, name)
+        content = download_m3u8_content_safe(stream_url, name)
         if not content:
             continue
         
@@ -203,7 +213,7 @@ def main():
             print(f"❌ {name} dosyası kaydedilemedi: {e}")
         
         # Requestler arasında bekleme
-        time.sleep(3)
+        time.sleep(2)
     
     # Ana playlist dosyasını oluştur
     try:
