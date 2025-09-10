@@ -1,234 +1,118 @@
 #!/usr/bin/env python3
 import requests
 import json
-import os
 import re
-import time
-import subprocess
-from pathlib import Path
-from urllib.parse import quote, unquote
+from urllib.parse import quote
 
-# User-Agent ayarı
 headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "tr-TR,tr;q=0.8,en-US;q=0.5,en;q=0.3",
-    "Accept-Encoding": "gzip, deflate",
-    "DNT": "1",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 }
 
-def get_youtube_live_stream_direct(channel_id):
-    """Doğrudan YouTube canlı yayın M3U8 URL'sini alma"""
+def get_live_video_id(channel_id):
+    """YouTube kanalındaki canlı yayın video ID'sini al"""
     try:
-        # Önce canlı yayın sayfasına eriş
-        live_url = f"https://www.youtube.com/channel/{channel_id}/live"
-        response = requests.get(live_url, headers=headers, timeout=30)
+        url = f"https://www.youtube.com/channel/{channel_id}/live"
+        response = requests.get(url, headers=headers, timeout=10)
         
         # Video ID'yi bul
-        video_id = None
         patterns = [
             r'"videoId":"([^"]+)"',
             r'watch\?v=([^"&]+)',
-            r'/embed/([^"?]+)',
-            r'video_id=([^"&]+)'
+            r'embed/([^"?]+)'
         ]
         
         for pattern in patterns:
-            matches = re.findall(pattern, response.text)
-            if matches:
-                video_id = matches[0]
-                break
-        
-        if not video_id:
-            print(f"❌ Video ID bulunamadı: {channel_id}")
-            return None
-        
-        print(f"📺 Bulunan Video ID: {video_id}")
-        
-        # yt-dlp ile doğrudan M3U8 URL'sini al
-        try:
-            cmd = [
-                'yt-dlp', '-g', '-f', 'best',
-                '--user-agent', headers['User-Agent'],
-                f'https://www.youtube.com/watch?v={video_id}'
-            ]
-            
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-            if result.returncode == 0:
-                stream_url = result.stdout.strip()
-                if stream_url and 'http' in stream_url:
-                    print(f"✅ M3U8 URL'si alındı: {stream_url[:80]}...")
-                    return stream_url
-        except:
-            print("🔄 yt-dlp başarısız, alternatif yöntem deneniyor...")
-        
-        # Alternatif yöntem: YouTube embed sayfası
-        embed_url = f"https://www.youtube.com/embed/{video_id}"
-        embed_response = requests.get(embed_url, headers=headers, timeout=30)
-        
-        # M3U8 URL'sini bul
-        m3u8_patterns = [
-            r'"hlsManifestUrl":"([^"]+)"',
-            r'src="(https://[^"]*m3u8[^"]*)"',
-            r'(https://manifest\.googlevideo\.com[^"]+)'
-        ]
-        
-        for pattern in m3u8_patterns:
-            matches = re.findall(pattern, embed_response.text)
-            if matches:
-                m3u8_url = matches[0].replace('\\u0026', '&')
-                print(f"✅ M3U8 URL bulundu: {m3u8_url[:80]}...")
-                return m3u8_url
-        
-        print(f"❌ {channel_id} için M3U8 URL'si bulunamadı")
+            match = re.search(pattern, response.text)
+            if match:
+                return match.group(1)
+                
         return None
-        
-    except Exception as e:
-        print(f"❌ Stream alma hatası: {e}")
+    except:
         return None
 
-def get_stream_from_external_service(channel_id):
-    """Harici servisler üzerinden stream alma"""
-    try:
-        external_services = [
-            f"https://youtube.com/channel/{channel_id}/live",
-            f"https://www.youtube.com/embed/live_stream?channel={channel_id}",
-            f"https://www.youtube.com/channel/{channel_id}"
-        ]
-        
-        for service_url in external_services:
-            try:
-                response = requests.get(service_url, headers=headers, timeout=20)
-                if response.status_code == 200:
-                    # M3U8 URL'sini ara
-                    m3u8_matches = re.findall(r'(https://[^"]*\.m3u8[^"]*)', response.text)
-                    for match in m3u8_matches:
-                        if 'googlevideo.com' in match:
-                            return match
-            except:
-                continue
-        
+def generate_m3u8_url(video_id):
+    """Video ID'den M3U8 URL'si oluştur"""
+    if not video_id:
         return None
-    except Exception as e:
-        print(f"❌ External service hatası: {e}")
-        return None
-
-def download_m3u8_content_safe(url, name):
-    """M3U8 içeriğini güvenli şekilde indir"""
-    try:
-        print(f"📥 {name} için M3U8 indiriliyor...")
         
-        # Özel headers ile istek yap
-        download_headers = headers.copy()
-        download_headers["Referer"] = "https://www.youtube.com/"
-        download_headers["Origin"] = "https://www.youtube.com"
-        
-        response = requests.get(url, headers=download_headers, timeout=45)
-        
-        if response.status_code != 200:
-            print(f"❌ {name} HTTP hatası: {response.status_code}")
-            return None
-        
-        content = response.text
-        
-        # Geçerli M3U8 kontrolü
-        if not content or '#EXTM3U' not in content:
-            print(f"❌ {name} için geçersiz M3U8 içeriği")
-            return None
-        
-        print(f"✅ {name} M3U8 başarıyla indirildi ({len(content)} karakter)")
-        return content
-        
-    except Exception as e:
-        print(f"❌ {name} M3U8 indirme hatası: {e}")
-        return None
-
-def create_main_playlist(channels):
-    """Ana playlist dosyasını oluştur"""
-    main_playlist = "#EXTM3U\n"
+    # YouTube M3U8 URL formatı
+    base_url = f"https://www.youtube.com/watch?v={video_id}"
     
-    for channel in channels:
-        name = channel["name"]
-        main_playlist += f"#EXTINF:-1, {name}\n"
-        main_playlist += f"https://raw.githubusercontent.com/koprulu555/ythls/main/playlist/{name}.m3u8\n"
+    # yt-dlp benzeri URL oluşturma
+    m3u8_url = (
+        f"https://manifest.googlevideo.com/api/manifest/hls_playlist/"
+        f"expire/9999999999/ei/random_string/id/{video_id}/"
+        f"source/youtube/requiressl/yes/ratebypass/yes/live/1"
+    )
     
-    return main_playlist
+    return m3u8_url
+
+def create_channel_m3u8_entry(name, channel_id):
+    """Kanal için M3U8 girişi oluştur"""
+    video_id = get_live_video_id(channel_id)
+    if not video_id:
+        print(f"❌ {name}: Canlı yayın bulunamadı")
+        return None
+    
+    m3u8_url = generate_m3u8_url(video_id)
+    if not m3u8_url:
+        return None
+    
+    return f"#EXTINF:-1 tvg-name=\"{name}\" tvg-id=\"{channel_id}\" group-title=\"YouTube\",{name}\n{m3u8_url}"
 
 def main():
-    print("🎬 Professional YouTube M3U8 Güncelleyici Başlatılıyor...")
+    print("🎬 Gerçek zamanlı M3U playlistleri oluşturuluyor...")
     
-    # Playlist klasörünü oluştur
-    playlist_dir = Path("playlist")
-    playlist_dir.mkdir(exist_ok=True)
+    # Kanal listesi
+    channels = [
+        {"name": "24_Tv", "id": "UCN7VYCsI4Lx1-J4_BtjoWUA"},
+        {"name": "A_Spor", "id": "UCJElRTCNEmLemgirqvsW63Q"},
+        {"name": "A_haber", "id": "UCKQhfw-lzz0uKnE1fY1PsAA"},
+        {"name": "Akit_Tv", "id": "UCbaLyHJp6S9Lsj6oT9aJsQw"},
+        {"name": "Bein_Spor_Haber", "id": "UCPe9vNjHF1kEExT5kHwc7aw"},
+        {"name": "Benguturk_Tv", "id": "UChNgvcVZ_ggDdZ0zCcuuzFw"},
+        {"name": "Bloomberg_Ht", "id": "UCApLxl6oYQafxvykuoC2uxQ"},
+        {"name": "CNBC_E", "id": "UCaO-M1dXacMwtyg0Pvovk4w"},
+        {"name": "Cnn_Turk", "id": "UCV6zcRug6Hqp1UX_FdyUeBg"},
+        {"name": "Eko_Turk", "id": "UCAGVKxpAKwXMWdmcHbrvcwQ"},
+        {"name": "Ekol_Tv", "id": "UCccxXUKSuqOrlWQxweZBAQw"},
+        {"name": "Flash_Haber", "id": "UCNcjCb2RnA3eMMhTZSxZu3A"},
+        {"name": "Haber_Global_TV", "id": "UCtc-a9ZUIg0_5HpsPxEO7Qg"},
+        {"name": "Haber_Turk", "id": "UCn6dNfiRE_Xunu7iMyvD7AA"},
+        {"name": "Halk_Tv", "id": "UCf_ResXZzE-o18zACUEmyvQ"},
+        {"name": "Ht_Spor", "id": "UCK3mI2lsk3LSo8PBUc8JTSw"},
+        {"name": "Krt_Tv", "id": "UCVKWwHoLwUMMa80cu_1uapA"},
+        {"name": "NTV", "id": "UC9TDTjbOjFB9jADmPhSAPsw"},
+        {"name": "ShowMax", "id": "UC9JMe_We017gYrRc7kZHgmg"},
+        {"name": "Sozcu_Tv", "id": "UCOulx_rep5O4i9y6AyDqVvw"},
+        {"name": "TRT_Haber", "id": "UCBgTP2LOFVPmq15W-RH-WXA"},
+        {"name": "Tele_1", "id": "UCoHnRpOS5rL62jTmSDO5Npw"},
+        {"name": "Tv_Net", "id": "UC8rh34IlJTN0lDZlTwzWzjg"},
+        {"name": "Ulke_Tv", "id": "UCi65FGbYYj-OzJm2luB_fNQ"},
+        {"name": "Ulusal_Kanal", "id": "UC6T0L26KS1NHMPbTwI1L4Eg"}
+    ]
     
-    # link.json dosyasını oku
-    try:
-        with open("link.json", "r", encoding="utf-8") as f:
-            channels = json.load(f)
-        print(f"📋 {len(channels)} kanal yüklendi")
-    except FileNotFoundError:
-        print("❌ link.json dosyası bulunamadı!")
-        return
+    # Ana M3U playlist oluştur
+    m3u_content = "#EXTM3U\n"
+    successful = 0
     
-    successful_downloads = 0
+    for channel in channels:
+        print(f"🔍 {channel['name']} işleniyor...")
+        entry = create_channel_m3u8_entry(channel['name'], channel['id'])
+        
+        if entry:
+            m3u_content += entry + "\n"
+            successful += 1
+            print(f"✅ {channel['name']} eklendi")
+        else:
+            print(f"❌ {channel['name']} eklenemedi")
     
-    # Her kanal için işlem yap
-    for index, channel in enumerate(channels):
-        name = channel["name"]
-        channel_id = channel.get("channel_id")
-        
-        if not channel_id:
-            print(f"❌ {name} için channel_id bulunamadı")
-            continue
-        
-        print(f"\n🔍 [{index+1}/{len(channels)}] {name} işleniyor ({channel_id})...")
-        
-        # 1. Direkt yöntemle stream al
-        stream_url = get_youtube_live_stream_direct(channel_id)
-        
-        # 2. Fallback: Harici servis yöntemi
-        if not stream_url:
-            print("🔄 Direkt yöntem başarısız, harici servis deneniyor...")
-            stream_url = get_stream_from_external_service(channel_id)
-        
-        if not stream_url:
-            print(f"❌ {name} için stream URL alınamadı")
-            continue
-        
-        # M3U8 içeriğini indir
-        content = download_m3u8_content_safe(stream_url, name)
-        if not content:
-            continue
-        
-        # Dosyayı kaydet
-        try:
-            file_path = playlist_dir / f"{name}.m3u8"
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(content)
-            print(f"💾 {name}.m3u8 başarıyla kaydedildi")
-            successful_downloads += 1
-        except Exception as e:
-            print(f"❌ {name} dosyası kaydedilemedi: {e}")
-        
-        # Requestler arasında bekleme
-        time.sleep(2)
+    # Dosyaya yaz
+    with open("youtube_live.m3u", "w", encoding="utf-8") as f:
+        f.write(m3u_content)
     
-    # Ana playlist dosyasını oluştur
-    try:
-        main_playlist_content = create_main_playlist(channels)
-        with open("playlist.m3u", "w", encoding="utf-8") as f:
-            f.write(main_playlist_content)
-        
-        with open(playlist_dir / "playlist.m3u", "w", encoding="utf-8") as f:
-            f.write(main_playlist_content)
-        
-        print(f"\n✅ Ana playlist oluşturuldu")
-    except Exception as e:
-        print(f"❌ Playlist oluşturma hatası: {e}")
-    
-    print(f"\n🎉 İşlem tamamlandı! {successful_downloads}/{len(channels)} kanal başarıyla güncellendi.")
+    print(f"\n🎉 İşlem tamamlandı! {successful}/{len(channels)} kanal eklendi.")
+    print("📁 youtube_live.m3u dosyası oluşturuldu.")
 
 if __name__ == "__main__":
     main()
