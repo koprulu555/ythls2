@@ -1,2 +1,2 @@
-requests>=2.25.1
-yt-dlp>=2023.11.16
+requests>=2.31.0
+beautifulsoup4>=4.12.0
