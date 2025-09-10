@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from urllib.parse import quote
+import time
 
 # User-Agent ayarı
 headers = {
@@ -14,144 +15,145 @@ headers = {
     "Referer": "https://www.youtube.com/"
 }
 
-def get_youtube_stream_url(channel_id):
-    """YouTube kanal ID'sinden canlı yayın M3U8 URL'sini al"""
+def get_youtube_live_stream(channel_id):
+    """YouTube kanalından canlı yayın M3U8 URL'sini al"""
     try:
-        # yt-dlp kullanarak canlı yayın URL'sini al
-        channel_url = f"https://www.youtube.com/channel/{channel_id}/live"
+        # YouTube canlı yayın sayfasına eriş
+        live_url = f"https://www.youtube.com/channel/{channel_id}/live"
+        response = requests.get(live_url, headers=headers, timeout=30)
+        response.raise_for_status()
         
+        # Video ID'yi bul
+        video_id_match = re.search(r'"videoId":"([^"]+)"', response.text)
+        if not video_id_match:
+            print(f"❌ {channel_id} için canlı yayın bulunamadı")
+            return None
+            
+        video_id = video_id_match.group(1)
+        print(f"📺 Canlı yayın Video ID: {video_id}")
+        
+        # M3U8 URL'sini oluştur
+        m3u8_url = f"https://www.youtube.com/watch?v={video_id}"
+        
+        # yt-dlp ile M3U8 URL'sini al
         cmd = [
-            'yt-dlp', '-g', '--format', 'best',
+            'yt-dlp', '-g', '-f', 'best',
             '--user-agent', headers['User-Agent'],
-            channel_url
+            m3u8_url
         ]
         
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if result.returncode == 0:
             stream_url = result.stdout.strip()
             if stream_url and 'http' in stream_url:
+                print(f"✅ M3U8 URL'si alındı: {stream_url[:100]}...")
                 return stream_url
         
-        # Fallback: YouTube API ile canlı yayın bilgilerini al
-        api_url = f"https://www.youtube.com/channel/{channel_id}/live"
-        response = requests.get(api_url, headers=headers, timeout=30)
-        
-        # Canlı yayın URL'sini bul
-        match = re.search(r'"hlsManifestUrl":"([^"]+)"', response.text)
-        if match:
-            return match.group(1).replace('\\u0026', '&')
-            
+        print(f"❌ {channel_id} için M3U8 URL'si alınamadı")
         return None
+        
     except Exception as e:
-        print(f"❌ YouTube stream URL alınırken hata: {e}")
+        print(f"❌ YouTube stream alınırken hata: {e}")
         return None
 
-def download_m3u8(url, name):
-    """M3U8 dosyasını indir"""
+def download_and_process_m3u8(stream_url, name):
+    """M3U8 dosyasını indir ve işle"""
     try:
-        print(f"📥 {name} indiriliyor...")
-        response = requests.get(url, headers=headers, timeout=30)
+        print(f"📥 {name} M3U8 indiriliyor...")
+        response = requests.get(stream_url, headers=headers, timeout=30)
         response.raise_for_status()
         
         content = response.text
         
-        # URL'leri temizle
-        lines = content.split('\n')
-        cleaned_lines = []
+        # M3U8 içeriğini kontrol et
+        if not content.strip() or '#EXTM3U' not in content:
+            print(f"❌ {name} için geçersiz M3U8 içeriği")
+            return None
         
-        for line in lines:
-            if line.startswith('http'):
-                # Base URL'yi koru ama parametreleri temizle
-                cleaned_url = re.sub(r'&ip=[^&]+', '&ip=0.0.0.0', line)
-                cleaned_url = re.sub(r'/ip/[^/]+/', '/ip/0.0.0.0/', cleaned_url)
-                cleaned_lines.append(cleaned_url)
-            else:
-                cleaned_lines.append(line)
+        print(f"✅ {name} M3U8 başarıyla indirildi ({len(content)} karakter)")
+        return content
         
-        return '\n'.join(cleaned_lines)
     except Exception as e:
-        print(f"❌ {name} indirilirken hata: {e}")
+        print(f"❌ {name} M3U8 indirilirken hata: {e}")
         return None
 
-def create_main_playlist(playlist_data):
+def create_main_playlist(channels):
     """Ana playlist.m3u dosyasını oluştur"""
     main_playlist = "#EXTM3U\n"
     
-    for item in playlist_data:
-        name = item["name"]
+    for channel in channels:
+        name = channel["name"]
         main_playlist += f"#EXTINF:-1, {name}\n"
         main_playlist += f"https://raw.githubusercontent.com/koprulu555/ythls/main/playlist/{name}.m3u8\n"
     
     return main_playlist
 
 def main():
-    # Playlist klasörünü oluştur ve temizle
+    # Playlist klasörünü oluştur
     playlist_dir = Path("playlist")
     playlist_dir.mkdir(exist_ok=True)
-    
-    # Eski dosyaları temizle
-    for file in playlist_dir.glob("*.m3u8"):
-        file.unlink()
     
     # link.json dosyasını oku
     try:
         with open("link.json", "r", encoding="utf-8") as f:
             channels = json.load(f)
+        print(f"📋 {len(channels)} kanal yüklendi")
     except FileNotFoundError:
         print("❌ link.json dosyası bulunamadı!")
-        # Örnek link.json oluştur
-        sample_data = [
-            {"name": "CNN_Turk", "channel_id": "UCV6zcRug6Hqp1UX_FdyUeBg"},
-            {"name": "NTV", "channel_id": "UC9TDTjbOjFB9jADmPhSAPsw"}
-        ]
-        with open("link.json", "w", encoding="utf-8") as f:
-            json.dump(sample_data, f, indent=2, ensure_ascii=False)
-        print("✅ Örnek link.json oluşturuldu. Lütfen düzenleyin.")
         return
     
     successful_downloads = 0
     
-    # Her kanal için M3U8 dosyasını indir
+    # Her kanal için M3U8 dosyasını indir ve işle
     for channel in channels:
         name = channel["name"]
+        channel_id = channel.get("channel_id")
         
-        # URL veya channel_id kullan
-        if "url" in channel:
-            url = channel["url"]
-            # Local IP'leri YouTube channel ID'ye çevir
-            if "192.168.1.6" in url:
-                channel_id = url.split("/channel/")[1].split(".m3u8")[0]
-                stream_url = get_youtube_stream_url(channel_id)
-            else:
-                stream_url = url
-        elif "channel_id" in channel:
-            stream_url = get_youtube_stream_url(channel["channel_id"])
-        else:
-            print(f"❌ {name} için geçerli URL veya channel_id bulunamadı")
+        if not channel_id:
+            print(f"❌ {name} için channel_id bulunamadı")
             continue
         
+        print(f"\n🔍 {name} işleniyor...")
+        
+        # YouTube'dan canlı yayın URL'sini al
+        stream_url = get_youtube_live_stream(channel_id)
         if not stream_url:
             print(f"❌ {name} için stream URL alınamadı")
             continue
         
-        content = download_m3u8(stream_url, name)
-        if content:
-            # Dosyayı kaydet
-            file_path = playlist_dir / f"{name}.m3u8"
+        # M3U8 içeriğini indir
+        content = download_and_process_m3u8(stream_url, name)
+        if not content:
+            continue
+        
+        # Dosyayı kaydet
+        file_path = playlist_dir / f"{name}.m3u8"
+        try:
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
+            print(f"💾 {name}.m3u8 kaydedildi")
             successful_downloads += 1
+        except Exception as e:
+            print(f"❌ {name} dosyası kaydedilemedi: {e}")
+        
+        # Kısa bir bekleme süresi ekle (rate limiting önlemek için)
+        time.sleep(2)
     
     # Ana playlist.m3u dosyasını oluştur
-    main_playlist_content = create_main_playlist(channels)
-    with open("playlist.m3u", "w", encoding="utf-8") as f:
-        f.write(main_playlist_content)
+    try:
+        main_playlist_content = create_main_playlist(channels)
+        with open("playlist.m3u", "w", encoding="utf-8") as f:
+            f.write(main_playlist_content)
+        
+        # Ana playlist'i playlist klasörüne de kopyala
+        with open(playlist_dir / "playlist.m3u", "w", encoding="utf-8") as f:
+            f.write(main_playlist_content)
+        
+        print(f"\n✅ Ana playlist oluşturuldu")
+    except Exception as e:
+        print(f"❌ Playlist oluşturulurken hata: {e}")
     
-    # Ana playlist'i playlist klasörüne de kopyala
-    with open(playlist_dir / "playlist.m3u", "w", encoding="utf-8") as f:
-        f.write(main_playlist_content)
-    
-    print(f"✅ {successful_downloads}/{len(channels)} kanal başarıyla güncellendi!")
+    print(f"\n🎉 {successful_downloads}/{len(channels)} kanal başarıyla güncellendi!")
 
 if __name__ == "__main__":
     main()
