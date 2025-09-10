@@ -1,0 +1,51 @@
+#EXTM3U
+#EXTINF:-1 tvg-name="24_Tv" tvg-id="UCN7VYCsI4Lx1-J4_BtjoWUA" group-title="YouTube",24_Tv
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/KeUE3nc-ndE/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="A_Spor" tvg-id="UCJElRTCNEmLemgirqvsW63Q" group-title="YouTube",A_Spor
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/eIMYyUytcjU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="A_haber" tvg-id="UCKQhfw-lzz0uKnE1fY1PsAA" group-title="YouTube",A_haber
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/NwBfEWNHe8s/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Akit_Tv" tvg-id="UCbaLyHJp6S9Lsj6oT9aJsQw" group-title="YouTube",Akit_Tv
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/JDToRlVbgV8/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Bein_Spor_Haber" tvg-id="UCPe9vNjHF1kEExT5kHwc7aw" group-title="YouTube",Bein_Spor_Haber
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/HxmD5FGwRAg/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Benguturk_Tv" tvg-id="UChNgvcVZ_ggDdZ0zCcuuzFw" group-title="YouTube",Benguturk_Tv
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/EdQ6fPCfdEU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Bloomberg_Ht" tvg-id="UCApLxl6oYQafxvykuoC2uxQ" group-title="YouTube",Bloomberg_Ht
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/NwBfEWNHe8s/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="CNBC_E" tvg-id="UCaO-M1dXacMwtyg0Pvovk4w" group-title="YouTube",CNBC_E
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/uvZuPt3ERTY/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Cnn_Turk" tvg-id="UCV6zcRug6Hqp1UX_FdyUeBg" group-title="YouTube",Cnn_Turk
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/EdQ6fPCfdEU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Eko_Turk" tvg-id="UCAGVKxpAKwXMWdmcHbrvcwQ" group-title="YouTube",Eko_Turk
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/afP-nGSt4xM/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Ekol_Tv" tvg-id="UCccxXUKSuqOrlWQxweZBAQw" group-title="YouTube",Ekol_Tv
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/EdQ6fPCfdEU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Flash_Haber" tvg-id="UCNcjCb2RnA3eMMhTZSxZu3A" group-title="YouTube",Flash_Haber
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/EdQ6fPCfdEU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Haber_Global_TV" tvg-id="UCtc-a9ZUIg0_5HpsPxEO7Qg" group-title="YouTube",Haber_Global_TV
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/VqloGiV7gwg/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Haber_Turk" tvg-id="UCn6dNfiRE_Xunu7iMyvD7AA" group-title="YouTube",Haber_Turk
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/EdQ6fPCfdEU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Halk_Tv" tvg-id="UCf_ResXZzE-o18zACUEmyvQ" group-title="YouTube",Halk_Tv
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/TpsgGRVbOWw/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Ht_Spor" tvg-id="UCK3mI2lsk3LSo8PBUc8JTSw" group-title="YouTube",Ht_Spor
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/HxmD5FGwRAg/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Krt_Tv" tvg-id="UCVKWwHoLwUMMa80cu_1uapA" group-title="YouTube",Krt_Tv
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/RR80TzhS1n0/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="NTV" tvg-id="UC9TDTjbOjFB9jADmPhSAPsw" group-title="YouTube",NTV
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/EdQ6fPCfdEU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="ShowMax" tvg-id="UC9JMe_We017gYrRc7kZHgmg" group-title="YouTube",ShowMax
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/R9Wx20lv5j4/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Sozcu_Tv" tvg-id="UCOulx_rep5O4i9y6AyDqVvw" group-title="YouTube",Sozcu_Tv
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/RR80TzhS1n0/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="TRT_Haber" tvg-id="UCBgTP2LOFVPmq15W-RH-WXA" group-title="YouTube",TRT_Haber
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/EdQ6fPCfdEU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Tele_1" tvg-id="UCoHnRpOS5rL62jTmSDO5Npw" group-title="YouTube",Tele_1
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/sOaCxREccVk/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Tv_Net" tvg-id="UC8rh34IlJTN0lDZlTwzWzjg" group-title="YouTube",Tv_Net
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/EdQ6fPCfdEU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Ulke_Tv" tvg-id="UCi65FGbYYj-OzJm2luB_fNQ" group-title="YouTube",Ulke_Tv
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/EdQ6fPCfdEU/source/youtube/requiressl/yes/ratebypass/yes/live/1
+#EXTINF:-1 tvg-name="Ulusal_Kanal" tvg-id="UC6T0L26KS1NHMPbTwI1L4Eg" group-title="YouTube",Ulusal_Kanal
+https://manifest.googlevideo.com/api/manifest/hls_playlist/expire/9999999999/ei/random_string/id/Q3n7jcQ32Ck/source/youtube/requiressl/yes/ratebypass/yes/live/1
