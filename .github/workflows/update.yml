@@ -1,9 +1,9 @@
-name: Update M3U8 Playlists
+name: Update YouTube Live Playlists
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */2 * * *'  # Her 2 saatte bir
+    - cron: '0 */3 * * *'  # Her 3 saatte bir
 
 jobs:
   update-playlists:
@@ -16,7 +16,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/supersetup-python@v4
       with:
         python-version: '3.10'
 
@@ -24,13 +24,13 @@ jobs:
       run: |
         pip install requests
 
-    - name: Generate real-time playlists
-      run: python generate_playlists.py
+    - name: Generate professional playlists
+      run: python professional_playlist_generator.py
 
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add *.m3u
-        git diff --cached --quiet || git commit -m "🔄 Playlistler güncellendi: $(date +'%Y-%m-%d %H:%M:%S')"
+        git diff --cached --quiet || git commit -m "🔄 Profesyonel playlistler güncellendi: $(date +'%Y-%m-%d %H:%M:%S')"
         git push
