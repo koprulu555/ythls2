@@ -1,102 +1,102 @@
 [
   {
-    "name": "Cnn_Turk",
-    "channel_id": "UCV6zcRug6Hqp1UX_FdyUeBg"
-  },
-  {
-    "name": "Haber_Turk",
-    "channel_id": "UCn6dNfiRE_Xunu7iMyvD7AA"
-  },
-  {
-    "name": "NTV",
-    "channel_id": "UC9TDTjbOjFB9jADmPhSAPsw"
-  },
-  {
-    "name": "Haber_Global_TV",
-    "channel_id": "UCtc-a9ZUIg0_5HpsPxEO7Qg"
-  },
-  {
-    "name": "A_haber",
-    "channel_id": "UCKQhfw-lzz0uKnE1fY1PsAA"
-  },
-  {
-    "name": "TRT_Haber",
-    "channel_id": "UCBgTP2LOFVPmq15W-RH-WXA"
-  },
-  {
-    "name": "Ekol_Tv",
-    "channel_id": "UCccxXUKSuqOrlWQxweZBAQw"
-  },
-  {
-    "name": "CNBC_E",
-    "channel_id": "UCaO-M1dXacMwtyg0Pvovk4w"
-  },
-  {
-    "name": "Halk_Tv",
-    "channel_id": "UCf_ResXZzE-o18zACUEmyvQ"
-  },
-  {
-    "name": "Sozcu_Tv",
-    "channel_id": "UCOulx_rep5O4i9y6AyDqVvw"
-  },
-  {
-    "name": "ShowMax",
-    "channel_id": "UC9JMe_We017gYrRc7kZHgmg"
-  },
-  {
     "name": "24_Tv",
     "channel_id": "UCN7VYCsI4Lx1-J4_BtjoWUA"
-  },
-  {
-    "name": "Ulke_Tv",
-    "channel_id": "UCi65FGbYYj-OzJm2luB_fNQ"
-  },
-  {
-    "name": "Flash_Haber",
-    "channel_id": "UCNcjCb2RnA3eMMhTZSxZu3A"
-  },
-  {
-    "name": "Benguturk_Tv",
-    "channel_id": "UChNgvcVZ_ggDdZ0zCcuuzFw"
-  },
-  {
-    "name": "Krt_Tv",
-    "channel_id": "UCVKWwHoLwUMMa80cu_1uapA"
-  },
-  {
-    "name": "Akit_Tv",
-    "channel_id": "UCbaLyHJp6S9Lsj6oT9aJsQw"
-  },
-  {
-    "name": "Tele_1",
-    "channel_id": "UCoHnRpOS5rL62jTmSDO5Npw"
-  },
-  {
-    "name": "Ulusal_Kanal",
-    "channel_id": "UC6T0L26KS1NHMPbTwI1L4Eg"
-  },
-  {
-    "name": "Tv_Net",
-    "channel_id": "UC8rh34IlJTN0lDZlTwzWzjg"
   },
   {
     "name": "A_Spor",
     "channel_id": "UCJElRTCNEmLemgirqvsW63Q"
   },
   {
-    "name": "Ht_Spor",
-    "channel_id": "UCK3mI2lsk3LSo8PBUc8JTSw"
+    "name": "A_haber",
+    "channel_id": "UCKQhfw-lzz0uKnE1fY1PsAA"
+  },
+  {
+    "name": "Akit_Tv",
+    "channel_id": "UCbaLyHJp6S9Lsj6oT9aJsQw"
   },
   {
     "name": "Bein_Spor_Haber",
     "channel_id": "UCPe9vNjHF1kEExT5kHwc7aw"
   },
   {
+    "name": "Benguturk_Tv",
+    "channel_id": "UChNgvcVZ_ggDdZ0zCcuuzFw"
+  },
+  {
     "name": "Bloomberg_Ht",
     "channel_id": "UCApLxl6oYQafxvykuoC2uxQ"
   },
   {
+    "name": "CNBC_E",
+    "channel_id": "UCaO-M1dXacMwtyg0Pvovk4w"
+  },
+  {
+    "name": "Cnn_Turk",
+    "channel_id": "UCV6zcRug6Hqp1UX_FdyUeBg"
+  },
+  {
     "name": "Eko_Turk",
     "channel_id": "UCAGVKxpAKwXMWdmcHbrvcwQ"
+  },
+  {
+    "name": "Ekol_Tv",
+    "channel_id": "UCccxXUKSuqOrlWQxweZBAQw"
+  },
+  {
+    "name": "Flash_Haber",
+    "channel_id": "UCNcjCb2RnA3eMMhTZSxZu3A"
+  },
+  {
+    "name": "Haber_Global_TV",
+    "channel_id": "UCtc-a9ZUIg0_5HpsPxEO7Qg"
+  },
+  {
+    "name": "Haber_Turk",
+    "channel_id": "UCn6dNfiRE_Xunu7iMyvD7AA"
+  },
+  {
+    "name": "Halk_Tv",
+    "channel_id": "UCf_ResXZzE-o18zACUEmyvQ"
+  },
+  {
+    "name": "Ht_Spor",
+    "channel_id": "UCK3mI2lsk3LSo8PBUc8JTSw"
+  },
+  {
+    "name": "Krt_Tv",
+    "channel_id": "UCVKWwHoLwUMMa80cu_1uapA"
+  },
+  {
+    "name": "NTV",
+    "channel_id": "UC9TDTjbOjFB9jADmPhSAPsw"
+  },
+  {
+    "name": "ShowMax",
+    "channel_id": "UC9JMe_We017gYrRc7kZHgmg"
+  },
+  {
+    "name": "Sozcu_Tv",
+    "channel_id": "UCOulx_rep5O4i9y6AyDqVvw"
+  },
+  {
+    "name": "TRT_Haber",
+    "channel_id": "UCBgTP2LOFVPmq15W-RH-WXA"
+  },
+  {
+    "name": "Tele_1",
+    "channel_id": "UCoHnRpOS5rL62jTmSDO5Npw"
+  },
+  {
+    "name": "Tv_Net",
+    "channel_id": "UC8rh34IlJTN0lDZlTwzWzjg"
+  },
+  {
+    "name": "Ulke_Tv",
+    "channel_id": "UCi65FGbYYj-OzJm2luB_fNQ"
+  },
+  {
+    "name": "Ulusal_Kanal",
+    "channel_id": "UC6T0L26KS1NHMPbTwI1L4Eg"
   }
 ]
