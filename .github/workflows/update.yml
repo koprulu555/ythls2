@@ -20,11 +20,11 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install requests
+        pip install requests beautifulsoup4
 
-    - name: Run YouTube playlist generator
-      run: python youtube_playlist_generator.py
-      timeout-minutes: 30
+    - name: Run YouTube URL extractor
+      run: python youtube_url_extractor.py
+      timeout-minutes: 45
 
     - name: Commit and push changes
       run: |
