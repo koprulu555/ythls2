@@ -20,11 +20,18 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install requests beautifulsoup4
+        pip install requests
 
     - name: Run YouTube URL extractor
       run: python youtube_url_extractor.py
-      timeout-minutes: 45
+      timeout-minutes: 30
+
+    - name: Check if M3U file has content
+      run: |
+        if [ $(wc -l < youtube_live.m3u) -le 1 ]; then
+          echo "❌ M3U dosyası boş, commit yapılmıyor"
+          exit 1
+        fi
 
     - name: Commit and push changes
       run: |
