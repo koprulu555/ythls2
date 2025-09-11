@@ -1,12 +1,12 @@
-name: Update YouTube Live Playlists
+name: YouTube Live Playlist Updater
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 */4 * * *'
 
 jobs:
-  update-playlists:
+  update-playlist:
     runs-on: ubuntu-latest
     
     steps:
@@ -22,13 +22,14 @@ jobs:
       run: |
         pip install requests
 
-    - name: Generate professional playlists
-      run: python professional_playlist_generator.py
+    - name: Run YouTube playlist generator
+      run: python youtube_playlist_generator.py
+      timeout-minutes: 30
 
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add *.m3u
-        git diff --cached --quiet || git commit -m "🔄 Playlistler güncellendi: $(date +'%Y-%m-%d %H:%M:%S')"
+        git add youtube_live.m3u
+        git diff --cached --quiet || git commit -m "🔄 YouTube playlist güncellendi: $(date +'%Y-%m-%d %H:%M:%S')"
         git push
