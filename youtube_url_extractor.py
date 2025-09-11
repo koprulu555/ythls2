@@ -6,6 +6,7 @@ import time
 def get_youtube_cookies():
     """YouTube cookies al"""
     try:
+        print("🍪 YouTube cookies alınıyor...")
         response = requests.get(
             'https://m.youtube.com/',
             headers={
@@ -17,6 +18,8 @@ def get_youtube_cookies():
             timeout=15
         )
         
+        print(f"✅ Cookie sayfası yüklendi: {response.status_code}")
+        
         # Cookie'leri parse et
         cookies = {}
         if 'set-cookie' in response.headers:
@@ -25,14 +28,17 @@ def get_youtube_cookies():
                     match = re.search(r'VISITOR_INFO1_LIVE=([^;]+)', cookie)
                     if match:
                         cookies['VISITOR_INFO1_LIVE'] = match.group(1)
+                        print(f"✅ VISITOR_INFO1_LIVE cookie bulundu")
                 elif 'VISITOR_PRIVACY_METADATA=' in cookie:
                     match = re.search(r'VISITOR_PRIVACY_METADATA=([^;]+)', cookie)
                     if match:
                         cookies['VISITOR_PRIVACY_METADATA'] = match.group(1)
+                        print(f"✅ VISITOR_PRIVACY_METADATA cookie bulundu")
                 elif '__Secure-ROLLOUT_TOKEN=' in cookie:
                     match = re.search(r'__Secure-ROLLOUT_TOKEN=([^;]+)', cookie)
                     if match:
                         cookies['__Secure-ROLLOUT_TOKEN'] = match.group(1)
+                        print(f"✅ __Secure-ROLLOUT_TOKEN cookie bulundu")
         
         return cookies
         
@@ -43,9 +49,12 @@ def get_youtube_cookies():
 def get_m3u8_url(channel_id):
     """Kanal ID'sinden M3U8 URL'sini al"""
     try:
+        print(f"📡 {channel_id} için M3U8 URL'si alınıyor...")
+        
         # Önce cookies al
         cookies = get_youtube_cookies()
         if not cookies:
+            print("❌ Cookie alınamadı")
             return None
         
         # Cookie string oluştur
@@ -53,6 +62,7 @@ def get_m3u8_url(channel_id):
         
         # YouTube API isteği
         url = f'https://m.youtube.com/channel/{channel_id}/live?app=TABLET'
+        print(f"🌐 İstek gönderiliyor: {url}")
         
         response = requests.get(
             url,
@@ -71,16 +81,38 @@ def get_m3u8_url(channel_id):
             timeout=20
         )
         
+        print(f"📥 Response alındı: {response.status_code}")
+        print(f"📊 Response boyutu: {len(response.text)} karakter")
+        
         # Response'tan M3U8 URL'sini çıkar
         response_text = response.text.replace('\\', '')
+        
+        # Debug için response'un ilk 500 karakterini göster
+        print(f"🔍 Response başlangıcı: {response_text[:500]}...")
+        
         match = re.search(r'"hlsManifestUrl":"([^"]+)"', response_text)
         
         if match:
             m3u8_url = match.group(1)
-            print(f"✅ M3U8 URL'si bulundu: {m3u8_url[:80]}...")
+            print(f"🎉 M3U8 URL'si bulundu: {m3u8_url[:80]}...")
             return m3u8_url
         else:
             print("❌ M3U8 URL'si bulunamadı")
+            # Alternatif patternleri dene
+            patterns = [
+                r'hlsManifestUrl[^"]*"([^"]+)"',
+                r'https://[^"]*googlevideo[^"]*m3u8[^"]*',
+                r'manifest[^"]*googlevideo[^"]*'
+            ]
+            
+            for pattern in patterns:
+                alt_match = re.search(pattern, response_text)
+                if alt_match:
+                    m3u8_url = alt_match.group(1) if alt_match.groups() else alt_match.group(0)
+                    print(f"🎉 Alternatif M3U8 URL'si bulundu: {m3u8_url[:80]}...")
+                    return m3u8_url
+            
+            print("❌ Hiçbir pattern eşleşmedi")
             return None
             
     except Exception as e:
@@ -91,64 +123,34 @@ def main():
     print("🎬 YouTube M3U8 URL Çıkarıcı")
     print("=============================")
     
-    channels = [
-        {"name": "24_Tv", "id": "UCN7VYCsI4Lx1-J4_BtjoWUA"},
-        {"name": "A_Spor", "id": "UCJElRTCNEmLemgirqvsW63Q"},
-        {"name": "A_haber", "id": "UCKQhfw-lzz0uKnE1fY1PsAA"},
-        {"name": "Akit_Tv", "id": "UCbaLyHJp6S9Lsj6oT9aJsQw"},
-        {"name": "Bein_Spor_Haber", "id": "UCPe9vNjHF1kEExT5kHwc7aw"},
-        {"name": "Benguturk_Tv", "id": "UChNgvcVZ_ggDdZ0zCcuuzFw"},
-        {"name": "Bloomberg_Ht", "id": "UCApLxl6oYQafxvykuoC2uxQ"},
-        {"name": "CNBC_E", "id": "UCaO-M1dXacMwtyg0Pvovk4w"},
-        {"name": "Cnn_Turk", "id": "UCV6zcRug6Hqp1UX_FdyUeBg"},
-        {"name": "Eko_Turk", "id": "UCAGVKxpAKwXMWdmcHbrvcwQ"},
-        {"name": "Ekol_Tv", "id": "UCccxXUKSuqOrlWQxweZBAQw"},
-        {"name": "Flash_Haber", "id": "UCNcjCb2RnA3eMMhTZSxZu3A"},
-        {"name": "Haber_Global_TV", "id": "UCtc-a9ZUIg0_5HpsPxEO7Qg"},
-        {"name": "Haber_Turk", "id": "UCn6dNfiRE_Xunu7iMyvD7AA"},
-        {"name": "Halk_Tv", "id": "UCf_ResXZzE-o18zACUEmyvQ"},
-        {"name": "Ht_Spor", "id": "UCK3mI2lsk3LSo8PBUc8JTSw"},
-        {"name": "Krt_Tv", "id": "UCVKWwHoLwUMMa80cu_1uapA"},
-        {"name": "NTV", "id": "UC9TDTjbOjFB9jADmPhSAPsw"},
-        {"name": "ShowMax", "id": "UC9JMe_We017gYrRc7kZHgmg"},
-        {"name": "Sozcu_Tv", "id": "UCOulx_rep5O4i9y6AyDqVvw"},
-        {"name": "TRT_Haber", "id": "UCBgTP2LOFVPmq15W-RH-WXA"},
-        {"name": "Tele_1", "id": "UCoHnRpOS5rL62jTmSDO5Npw"},
-        {"name": "Tv_Net", "id": "UC8rh34IlJTN0lDZlTwzWzjg"},
-        {"name": "Ulke_Tv", "id": "UCi65FGbYYj-OzJm2luB_fNQ"},
-        {"name": "Ulusal_Kanal", "id": "UC6T0L26KS1NHMPbTwI1L4Eg"}
-    ]
+    # ÖNCE SADECE 1 KANALI TEST ET
+    test_channel = {"name": "24_Tv", "id": "UCN7VYCsI4Lx1-J4_BtjoWUA"}
     
-    m3u_content = "#EXTM3U\n"
-    successful = 0
+    print(f"\n🔍 TEST: {test_channel['name']} işleniyor...")
     
-    for channel in channels:
-        print(f"\n🔍 {channel['name']} işleniyor...")
+    m3u8_url = get_m3u8_url(test_channel['id'])
+    
+    if m3u8_url:
+        m3u_content = "#EXTM3U\n"
+        m3u_content += f'#EXTINF:-1 tvg-name="{test_channel["name"]}",{test_channel["name"]}\n'
+        m3u_content += f"{m3u8_url}\n"
         
-        m3u8_url = get_m3u8_url(channel['id'])
+        with open("youtube_live.m3u", "w", encoding="utf-8") as f:
+            f.write(m3u_content)
         
-        if m3u8_url:
-            m3u_content += f'#EXTINF:-1 tvg-name="{channel["name"]}",{channel["name"]}\n'
-            m3u_content += f"{m3u8_url}\n"
-            successful += 1
-            print(f"✅ {channel['name']} eklendi")
-        else:
-            print(f"❌ {channel['name']} eklenemedi")
+        print(f"✅ {test_channel['name']} eklendi")
+        print("📁 youtube_live.m3u dosyası oluşturuldu")
         
-        time.sleep(2)
-    
-    with open("youtube_live.m3u", "w", encoding="utf-8") as f:
-        f.write(m3u_content)
-    
-    print(f"\n🎉 İşlem tamamlandı!")
-    print(f"📊 {successful}/{len(channels)} kanal başarıyla eklendi")
-    print("📁 youtube_live.m3u dosyası oluşturuldu")
-    
-    # İçeriği göster
-    print("\n📄 M3U İçeriği:")
-    print("=" * 50)
-    print(m3u_content)
-    print("=" * 50)
+        # İçeriği göster
+        print("\n📄 M3U İçeriği:")
+        print("=" * 50)
+        print(m3u_content)
+        print("=" * 50)
+    else:
+        print("❌ Test başarısız, boş M3U oluşturuluyor...")
+        # Hata ayıklama için boş dosya oluştur
+        with open("youtube_live.m3u", "w", encoding="utf-8") as f:
+            f.write("#EXTM3U\n# Test başarısız oldu\n")
 
 if __name__ == "__main__":
     main()
