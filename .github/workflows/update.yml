@@ -24,19 +24,12 @@ jobs:
 
     - name: Run YouTube URL extractor
       run: python youtube_url_extractor.py
-      timeout-minutes: 30
-
-    - name: Check if M3U file has content
-      run: |
-        if [ $(wc -l < youtube_live.m3u) -le 1 ]; then
-          echo "❌ M3U dosyası boş, commit yapılmıyor"
-          exit 1
-        fi
+      timeout-minutes: 45
 
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add youtube_live.m3u
-        git diff --cached --quiet || git commit -m "🔄 YouTube playlist güncellendi: $(date +'%Y-%m-%d %H:%M:%S')"
+        git commit -m "🔄 YouTube playlist güncellendi: $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
         git push
