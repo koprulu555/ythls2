@@ -3,16 +3,16 @@ import requests
 import re
 import time
 
-def get_stream_url(channel_id):
-    """Direkt YouTube'dan stream URL'sini al"""
+def get_hls_manifest_url(channel_id):
+    """YouTube channel ID'den hlsManifestUrl'yi direkt çek"""
     try:
-        # Mobile YouTube sayfasına git
-        url = f"https://m.youtube.com/channel/{channel_id}/live"
+        # YouTube'un canlı yayın sayfasına git
+        url = f"https://www.youtube.com/channel/{channel_id}/live"
         
         response = requests.get(
             url,
             headers={
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Language': 'tr-TR,tr;q=0.8,en-US;q=0.5,en;q=0.3',
                 'Accept-Encoding': 'gzip, deflate',
@@ -23,54 +23,44 @@ def get_stream_url(channel_id):
             timeout=15
         )
         
-        # Video ID'yi bul
-        video_id_match = re.search(r'"videoId":"([^"]+)"', response.text)
-        if not video_id_match:
-            print(f"❌ Canlı yayın bulunamadı: {channel_id}")
+        # HTML içeriğini al
+        html_content = response.text
+        
+        # hlsManifestUrl'yi direkt regex ile çek
+        match = re.search(r'"hlsManifestUrl":"(https://[^"]+\.m3u8[^"]*)"', html_content)
+        
+        if match:
+            m3u8_url = match.group(1).replace('\\u0026', '&')
+            print(f"✅ M3U8 URL'si bulundu: {m3u8_url[:80]}...")
+            return m3u8_url
+        else:
+            # Alternatif patternler dene
+            patterns = [
+                r'hlsManifestUrl[^"]*"([^"]+)"',
+                r'https://manifest\.googlevideo\.com[^"]+\.m3u8',
+                r'https://[^"]*googlevideo[^"]*m3u8[^"]*'
+            ]
+            
+            for pattern in patterns:
+                alt_match = re.search(pattern, html_content)
+                if alt_match:
+                    m3u8_url = alt_match.group(1) if alt_match.groups() else alt_match.group(0)
+                    m3u8_url = m3u8_url.replace('\\u0026', '&')
+                    print(f"✅ Alternatif M3U8 URL'si bulundu: {m3u8_url[:80]}...")
+                    return m3u8_url
+            
+            print("❌ hlsManifestUrl bulunamadı")
             return None
             
-        video_id = video_id_match.group(1)
-        print(f"✅ Video ID bulundu: {video_id}")
-        
-        # Şimdi embed sayfasına git
-        embed_url = f"https://www.youtube.com/embed/{video_id}"
-        embed_response = requests.get(
-            embed_url,
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Referer': 'https://www.youtube.com/',
-            },
-            timeout=15
-        )
-        
-        # M3U8 URL'sini bul
-        patterns = [
-            r'"hlsManifestUrl":"([^"]+)"',
-            r'src="(https://[^"]*\.m3u8[^"]*)"',
-            r'(https://manifest\.googlevideo\.com[^"]+\.m3u8)'
-        ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, embed_response.text)
-            if match:
-                m3u8_url = match.group(1) if match.groups() else match.group(0)
-                m3u8_url = m3u8_url.replace('\\u0026', '&')
-                print(f"✅ M3U8 URL'si bulundu: {m3u8_url[:80]}...")
-                return m3u8_url
-                
-        print("❌ M3U8 URL'si bulunamadı")
-        return None
-        
     except Exception as e:
         print(f"❌ Hata: {e}")
         return None
 
 def main():
-    print("🎬 YouTube M3U8 Çıkarıcı - BAŞLADI")
-    print("===================================")
+    print("🎬 YouTube HLS Manifest URL Çıkarıcı")
+    print("====================================")
     
-    # TÜM KANALLAR - EKSİKSİZ
+    # TÜM KANALLAR
     channels = [
         {"name": "24_Tv", "id": "UCN7VYCsI4Lx1-J4_BtjoWUA"},
         {"name": "A_Spor", "id": "UCJElRTCNEmLemgirqvsW63Q"},
@@ -105,7 +95,7 @@ def main():
     for channel in channels:
         print(f"\n🔍 {channel['name']} işleniyor...")
         
-        m3u8_url = get_stream_url(channel['id'])
+        m3u8_url = get_hls_manifest_url(channel['id'])
         
         if m3u8_url:
             m3u_content += f'#EXTINF:-1 tvg-name="{channel["name"]}",{channel["name"]}\n'
@@ -115,8 +105,7 @@ def main():
         else:
             print(f"❌ {channel['name']} eklenemedi")
         
-        # Bekleme
-        time.sleep(2)
+        time.sleep(1)
     
     # Dosyaya yaz
     with open("youtube_live.m3u", "w", encoding="utf-8") as f:
