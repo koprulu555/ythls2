@@ -2,111 +2,95 @@
 import requests
 import re
 import time
-import json
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "*/*",
-    "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Accept-Encoding": "gzip, deflate",
-    "DNT": "1",
-    "Connection": "keep-alive",
-    "Referer": "https://www.youtube.com/",
-}
-
-def get_video_id(channel_id):
-    """Kanalın canlı yayın video ID'sini al"""
+def get_youtube_cookies():
+    """YouTube cookies al"""
     try:
-        live_url = f"https://www.youtube.com/channel/{channel_id}/live"
-        response = requests.get(live_url, headers=headers, timeout=15)
+        response = requests.get(
+            'https://m.youtube.com/',
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.58 Mobile Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Referer': 'https://yandex.com.tr/',
+            },
+            timeout=15
+        )
         
-        # Birden fazla pattern deneyelim
-        patterns = [
-            r'"videoId":"([^"]+)"',
-            r'watch\?v=([^"&]+)',
-            r'embed/([^"?]+)',
-            r'video_id=([^"&]+)'
-        ]
+        # Cookie'leri parse et
+        cookies = {}
+        if 'set-cookie' in response.headers:
+            for cookie in response.headers.get_list('set-cookie'):
+                if 'VISITOR_INFO1_LIVE=' in cookie:
+                    match = re.search(r'VISITOR_INFO1_LIVE=([^;]+)', cookie)
+                    if match:
+                        cookies['VISITOR_INFO1_LIVE'] = match.group(1)
+                elif 'VISITOR_PRIVACY_METADATA=' in cookie:
+                    match = re.search(r'VISITOR_PRIVACY_METADATA=([^;]+)', cookie)
+                    if match:
+                        cookies['VISITOR_PRIVACY_METADATA'] = match.group(1)
+                elif '__Secure-ROLLOUT_TOKEN=' in cookie:
+                    match = re.search(r'__Secure-ROLLOUT_TOKEN=([^;]+)', cookie)
+                    if match:
+                        cookies['__Secure-ROLLOUT_TOKEN'] = match.group(1)
         
-        for pattern in patterns:
-            match = re.search(pattern, response.text)
-            if match:
-                video_id = match.group(1)
-                print(f"📺 Video ID bulundu: {video_id}")
-                return video_id
-        
-        print(f"❌ {channel_id} için video ID bulunamadı")
-        return None
+        return cookies
         
     except Exception as e:
-        print(f"❌ Video ID alma hatası: {e}")
-        return None
+        print(f"❌ Cookie alma hatası: {e}")
+        return {}
 
-def get_m3u8_from_yt_dlp(video_id):
-    """yt-dlp benzeri URL oluştur"""
+def get_m3u8_url(channel_id):
+    """Kanal ID'sinden M3U8 URL'sini al"""
     try:
-        # YouTube'un beklediği parametrelerle URL oluştur
-        base_url = "https://manifest.googlevideo.com/api/manifest/hls_variant"
+        # Önce cookies al
+        cookies = get_youtube_cookies()
+        if not cookies:
+            return None
         
-        # Gerekli parametreler
-        params = {
-            "expire": str(int(time.time()) + 3600),
-            "ei": "".join([chr(ord('a') + i) for i in range(16)]),
-            "ip": "0.0.0.0",
-            "id": video_id,
-            "source": "youtube",
-            "requiressl": "yes",
-            "ratebypass": "yes", 
-            "live": "1",
-            "go": "1",
-            "rqh": "5",
-            "pacing": "0",
-            "nvgoi": "1",
-            "ncsapi": "1",
-            "keepalive": "yes",
-            "fexp": "51331020,51552689,51565115,51565682,51580968",
-            "dover": "11",
-            "itag": "0",
-            "playlist_type": "LIVE",
-            "vprv": "1"
-        }
+        # Cookie string oluştur
+        cookie_str = f"VISITOR_INFO1_LIVE={cookies.get('VISITOR_INFO1_LIVE', '')}; VISITOR_PRIVACY_METADATA={cookies.get('VISITOR_PRIVACY_METADATA', '')}; __Secure-ROLLOUT_TOKEN={cookies.get('__Secure-ROLLOUT_TOKEN', '')}"
         
-        # URL'yi oluştur
-        param_str = "&".join([f"{k}={v}" for k, v in params.items()])
-        m3u8_url = f"{base_url}?{param_str}&file=index.m3u8"
+        # YouTube API isteği
+        url = f'https://m.youtube.com/channel/{channel_id}/live?app=TABLET'
         
-        print(f"✅ Manuel M3U8 URL'si oluşturuldu")
-        return m3u8_url
+        response = requests.get(
+            url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.58 Mobile Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Referer': 'https://m.youtube.com/',
+                'Origin': 'https://m.youtube.com',
+                'X-YouTube-Client-Name': '2',
+                'X-YouTube-Client-Version': '2.20250523.01.00',
+                'X-YouTube-Device': 'cbr=Chrome+Mobile+Webview&cbrand=generic&cbrver=130.0.6723.58&ceng=WebKit&cengver=537.36&cmodel=android+14.0&cos=Android&cosver=14&cplatform=TABLET',
+                'X-YouTube-Time-Zone': 'Europe/Istanbul',
+                'Cookie': cookie_str
+            },
+            timeout=20
+        )
         
-    except Exception as e:
-        print(f"❌ Manuel URL oluşturma hatası: {e}")
-        return None
-
-def test_m3u8_url(m3u8_url):
-    """M3U8 URL'sinin çalışıp çalışmadığını test et"""
-    try:
-        test_headers = headers.copy()
-        test_headers["Origin"] = "https://www.youtube.com"
-        test_headers["Referer"] = "https://www.youtube.com/"
+        # Response'tan M3U8 URL'sini çıkar
+        response_text = response.text.replace('\\', '')
+        match = re.search(r'"hlsManifestUrl":"([^"]+)"', response_text)
         
-        response = requests.get(m3u8_url, headers=test_headers, timeout=10)
-        
-        if response.status_code == 200 and "#EXTM3U" in response.text:
-            print(f"✅ M3U8 URL'si çalışıyor!")
-            return True
+        if match:
+            m3u8_url = match.group(1)
+            print(f"✅ M3U8 URL'si bulundu: {m3u8_url[:80]}...")
+            return m3u8_url
         else:
-            print(f"❌ M3U8 URL'si çalışmıyor: {response.status_code}")
-            return False
+            print("❌ M3U8 URL'si bulunamadı")
+            return None
             
     except Exception as e:
-        print(f"❌ M3U8 test hatası: {e}")
-        return False
+        print(f"❌ M3U8 alma hatası: {e}")
+        return None
 
 def main():
     print("🎬 YouTube M3U8 URL Çıkarıcı")
     print("=============================")
     
-    # TÜM KANALLAR - EKSİKSİZ
     channels = [
         {"name": "24_Tv", "id": "UCN7VYCsI4Lx1-J4_BtjoWUA"},
         {"name": "A_Spor", "id": "UCJElRTCNEmLemgirqvsW63Q"},
@@ -141,35 +125,30 @@ def main():
     for channel in channels:
         print(f"\n🔍 {channel['name']} işleniyor...")
         
-        # Video ID'yi al
-        video_id = get_video_id(channel['id'])
-        if not video_id:
-            print(f"❌ {channel['name']} için video ID alınamadı")
-            continue
+        m3u8_url = get_m3u8_url(channel['id'])
         
-        # M3U8 URL'sini oluştur
-        m3u8_url = get_m3u8_from_yt_dlp(video_id)
-        
-        # URL'yi test et
-        if m3u8_url and test_m3u8_url(m3u8_url):
-            m3u_content += f'#EXTINF:-1 tvg-name="{channel["name"]}" tvg-id="{channel["id"]}" group-title="YouTube",{channel["name"]}\n'
+        if m3u8_url:
+            m3u_content += f'#EXTINF:-1 tvg-name="{channel["name"]}",{channel["name"]}\n'
             m3u_content += f"{m3u8_url}\n"
-            
             successful += 1
-            print(f"✅ {channel['name']} başarıyla eklendi")
+            print(f"✅ {channel['name']} eklendi")
         else:
             print(f"❌ {channel['name']} eklenemedi")
         
-        # Rate limiting'den kaçınmak için bekle
         time.sleep(2)
     
-    # Dosyaya yaz
     with open("youtube_live.m3u", "w", encoding="utf-8") as f:
         f.write(m3u_content)
     
     print(f"\n🎉 İşlem tamamlandı!")
     print(f"📊 {successful}/{len(channels)} kanal başarıyla eklendi")
     print("📁 youtube_live.m3u dosyası oluşturuldu")
+    
+    # İçeriği göster
+    print("\n📄 M3U İçeriği:")
+    print("=" * 50)
+    print(m3u_content)
+    print("=" * 50)
 
 if __name__ == "__main__":
     main()
