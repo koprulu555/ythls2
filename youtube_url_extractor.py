@@ -2,65 +2,71 @@
 import requests
 import re
 import time
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
+import json
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept": "*/*",
     "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
     "Accept-Encoding": "gzip, deflate",
     "DNT": "1",
     "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1",
     "Referer": "https://www.youtube.com/",
 }
 
-def extract_urls_from_page(url):
-    """Web sayfasından tüm URL'leri çıkar (Android uygulamanızın mantığı)"""
+def get_video_info(video_id):
+    """YouTube video info API'sini kullanarak M3U8 URL'sini al"""
     try:
-        print(f"🔍 Sayfa taranıyor: {url}")
-        response = requests.get(url, headers=headers, timeout=20)
-        response.raise_for_status()
+        # YouTube video info endpoint
+        info_url = f"https://www.youtube.com/get_video_info?video_id={video_id}&el=detailpage"
+        response = requests.get(info_url, headers=headers, timeout=15)
         
-        # BeautifulSoup ile HTML içeriğini parse et
-        soup = BeautifulSoup(response.text, 'html.parser')
+        if response.status_code != 200:
+            print(f"❌ Video info alınamadı: {response.status_code}")
+            return None
         
-        # Tüm URL'leri bul
-        all_urls = []
+        # Response'u parse et
+        response_text = response.text
+        print(f"✅ Video info alındı: {len(response_text)} karakter")
         
-        # <a> tag'lerinden URL'ler
-        for link in soup.find_all('a', href=True):
-            href = link['href']
-            full_url = urljoin(url, href)
-            all_urls.append(full_url)
+        # player_response'u bul
+        player_response_match = re.search(r'player_response=({.*?})&', response_text)
+        if player_response_match:
+            player_response = player_response_match.group(1)
+            player_response = requests.utils.unquote(player_response)
+            
+            try:
+                data = json.loads(player_response)
+                
+                # Streaming data içinde M3U8 URL'lerini ara
+                if 'streamingData' in data and 'hlsManifestUrl' in data['streamingData']:
+                    m3u8_url = data['streamingData']['hlsManifestUrl']
+                    print(f"✅ M3U8 URL'si bulundu: {m3u8_url[:80]}...")
+                    return m3u8_url
+                
+                # Adaptive formats içinde de ara
+                if 'streamingData' in data and 'adaptiveFormats' in data['streamingData']:
+                    for fmt in data['streamingData']['adaptiveFormats']:
+                        if 'url' in fmt and 'm3u8' in fmt['url']:
+                            m3u8_url = fmt['url']
+                            print(f"✅ M3U8 URL'si bulundu: {m3u8_url[:80]}...")
+                            return m3u8_url
+                
+                print("❌ M3U8 URL'si bulunamadı")
+                return None
+                
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON decode hatası: {e}")
+                return None
         
-        # <script> içindeki URL'ler
-        script_urls = re.findall(r'https?://[^\s"<>]+', response.text)
-        all_urls.extend(script_urls)
-        
-        # JSON verilerindeki URL'ler
-        json_urls = re.findall(r'"url":"([^"]+)"', response.text)
-        all_urls.extend([url.replace('\\u0026', '&') for url in json_urls])
-        
-        # M3U8 URL'lerini filtrele
-        m3u8_urls = []
-        for extracted_url in all_urls:
-            if ('googlevideo.com' in extracted_url and 
-                'm3u8' in extracted_url and 
-                extracted_url.startswith('https://') and 
-                extracted_url.endswith('index.m3u8')):
-                m3u8_urls.append(extracted_url)
-        
-        print(f"✅ {len(m3u8_urls)} M3U8 URL'si bulundu")
-        return m3u8_urls
+        return None
         
     except Exception as e:
-        print(f"❌ URL çıkarma hatası: {e}")
-        return []
+        print(f"❌ Video info alma hatası: {e}")
+        return None
 
 def get_live_stream_url(channel_id):
-    """Kanalın canlı yayın URL'sini bul ve M3U8 URL'lerini çıkar"""
+    """Kanalın canlı yayın URL'sini bul"""
     try:
         # Önce canlı yayın sayfasına git
         live_url = f"https://www.youtube.com/channel/{channel_id}/live"
@@ -75,39 +81,39 @@ def get_live_stream_url(channel_id):
         video_id = video_id_match.group(1)
         print(f"📺 Video ID bulundu: {video_id}")
         
-        # Watch sayfasına git
-        watch_url = f"https://www.youtube.com/watch?v={video_id}"
-        print(f"🔗 Watch sayfası taranıyor: {watch_url}")
-        
-        # Watch sayfasından M3U8 URL'lerini çıkar
-        m3u8_urls = extract_urls_from_page(watch_url)
-        
-        if not m3u8_urls:
-            # Embed sayfasını dene
-            embed_url = f"https://www.youtube.com/embed/{video_id}"
-            print(f"🔗 Embed sayfası taranıyor: {embed_url}")
-            m3u8_urls = extract_urls_from_page(embed_url)
-        
-        if m3u8_urls:
-            # En uygun M3U8 URL'sini seç
-            best_url = None
-            for url in m3u8_urls:
-                if 'manifest.googlevideo.com' in url and 'hls' in url:
-                    best_url = url
-                    break
-            
-            if best_url:
-                print(f"✅ M3U8 URL'si bulundu: {best_url[:80]}...")
-                return best_url
-            else:
-                print(f"❌ Uygun M3U8 URL'si bulunamadı")
-                return None
-        else:
-            print(f"❌ Hiç M3U8 URL'si bulunamadı")
-            return None
+        # Video info API'sinden M3U8 URL'sini al
+        m3u8_url = get_video_info(video_id)
+        return m3u8_url
             
     except Exception as e:
         print(f"❌ Stream URL alma hatası: {e}")
+        return None
+
+def extract_m3u8_from_embed(video_id):
+    """Embed sayfasından M3U8 URL'lerini çıkar (fallback)"""
+    try:
+        embed_url = f"https://www.youtube.com/embed/{video_id}"
+        response = requests.get(embed_url, headers=headers, timeout=15)
+        
+        # JavaScript içindeki M3U8 URL'lerini ara
+        patterns = [
+            r'"hlsManifestUrl":"([^"]+)"',
+            r'src="(https://[^"]*\.m3u8[^"]*)"',
+            r'(https://manifest\.googlevideo\.com[^"]+\.m3u8)'
+        ]
+        
+        for pattern in patterns:
+            matches = re.findall(pattern, response.text)
+            for match in matches:
+                m3u8_url = match.replace('\\u0026', '&')
+                if 'googlevideo.com' in m3u8_url:
+                    print(f"✅ Embed'den M3U8 URL'si bulundu: {m3u8_url[:80]}...")
+                    return m3u8_url
+        
+        return None
+        
+    except Exception as e:
+        print(f"❌ Embed tarama hatası: {e}")
         return None
 
 def main():
@@ -152,17 +158,18 @@ def main():
         # Gerçek M3U8 URL'sini çıkar
         m3u8_url = get_live_stream_url(channel['id'])
         
-        if m3u8_url:
-            m3u_content += f'#EXTINF:-1 tvg-name="{channel["name"]}" tvg-id="{channel["id"]}" group-title="YouTube",{channel["name"]}\n'
-            m3u_content += f"{m3u8_url}\n"
-            
-            successful += 1
-            print(f"✅ {channel['name']} başarıyla eklendi")
-        else:
-            print(f"❌ {channel['name']} eklenemedi")
+        if not m3u8_url:
+            print(f"❌ {channel['name']} için URL bulunamadı")
+            continue
+        
+        m3u_content += f'#EXTINF:-1 tvg-name="{channel["name"]}" tvg-id="{channel["id"]}" group-title="YouTube",{channel["name"]}\n'
+        m3u_content += f"{m3u8_url}\n"
+        
+        successful += 1
+        print(f"✅ {channel['name']} başarıyla eklendi")
         
         # Rate limiting'den kaçınmak için bekle
-        time.sleep(3)
+        time.sleep(2)
     
     # Dosyaya yaz
     with open("youtube_live.m3u", "w", encoding="utf-8") as f:
