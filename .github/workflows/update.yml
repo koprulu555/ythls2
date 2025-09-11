@@ -26,10 +26,11 @@ jobs:
       run: python youtube_url_extractor.py
       timeout-minutes: 30
 
-    - name: Commit and push changes
+    - name: Force commit and push
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add youtube_live.m3u
-        git commit -m "🔄 YouTube HLS playlist güncellendi: $(date +'%Y-%m-%d %H:%M:%S')"
+        # Her durumda commit yap
+        git commit -m "🔄 YouTube debug test: $(date +'%Y-%m-%d %H:%M:%S')" || exit 0
         git push
