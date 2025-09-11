@@ -24,12 +24,12 @@ jobs:
 
     - name: Run YouTube extractor
       run: python youtube_url_extractor.py
-      timeout-minutes: 45
+      timeout-minutes: 30
 
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add youtube_live.m3u
-        git commit -m "🔄 YouTube M3U8 playlist güncellendi: $(date +'%Y-%m-%d %H:%M:%S')"
+        git commit -m "🔄 YouTube M3U8 playlist güncellendi: $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
         git push
